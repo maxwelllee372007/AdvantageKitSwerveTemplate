@@ -62,7 +62,7 @@ public class ModuleIOTalonFX implements ModuleIO {
   private final StatusSignal<Double> turnAppliedVolts;
   private final StatusSignal<Double> turnCurrent;
 
-  private final double absoluteEncoderOffset;
+  private final Rotation2d absoluteEncoderOffset;
 
   //   private final ModuleConfig config;
 
@@ -87,10 +87,10 @@ public class ModuleIOTalonFX implements ModuleIO {
     turnTalon.setInverted(config.turnMotorInverted());
     setTurnBrakeMode(true);
 
-    CANcoderConfiguration cancoderConfigs = new CANcoderConfiguration();
-    cancoderConfigs.MagnetSensor.MagnetOffset = config.absoluteEncoderOffset();
-    cancoder.getConfigurator().apply(cancoderConfigs);
-    // cancoder.getConfigurator().apply(new CANcoderConfiguration());
+    // CANcoderConfiguration cancoderConfigs = new CANcoderConfiguration();
+    // cancoderConfigs.MagnetSensor.MagnetOffset = absoluteEncoderOffset.getRotations();
+    // cancoder.getConfigurator().apply(cancoderConfigs);
+    cancoder.getConfigurator().apply(new CANcoderConfiguration());
 
     timestampQueue = PhoenixOdometryThread.getInstance().makeTimestampQueue();
 
@@ -148,7 +148,8 @@ public class ModuleIOTalonFX implements ModuleIO {
 
     inputs.turnAbsolutePosition =
         Rotation2d.fromRotations(turnAbsolutePosition.getValueAsDouble())
-            .minus(new Rotation2d(Units.rotationsToRadians(absoluteEncoderOffset)));
+            .minus(absoluteEncoderOffset);
+
     inputs.turnPosition =
         Rotation2d.fromRotations(turnPosition.getValueAsDouble() / moduleConstants.turnReduction());
     inputs.turnVelocityRadPerSec =

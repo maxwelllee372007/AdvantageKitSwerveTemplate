@@ -70,7 +70,7 @@ public class AprilTagVisionIOPhotonVision implements AprilTagVisionIO {
    * @param estimator PhotonVisionRunnable estimator.
    * @param inputs The AprilTagVisionIOInputs object containing the inputs.
    */
-  public void updatePoseEstimates(PhotonVisionRunnable estomator, AprilTagVisionIOInputs inputs) {
+  public vReoid updatePoseEstimates(PhotonVisionRunnable estomator, AprilTagVisionIOInputs inputs) {
 
     var cameraPose = frontEstimator.grabLatestEstimatedPose();
 

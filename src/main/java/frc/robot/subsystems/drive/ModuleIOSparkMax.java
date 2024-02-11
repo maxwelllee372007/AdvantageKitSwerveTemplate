@@ -24,6 +24,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.RobotController;
+import frc.robot.subsystems.drive.DriveConstants.ModuleConfig;
 import java.util.Queue;
 
 /**
@@ -49,7 +50,7 @@ public class ModuleIOSparkMax implements ModuleIO {
   private final Queue<Double> drivePositionQueue;
   private final Queue<Double> turnPositionQueue;
 
-  private final double absoluteEncoderOffset;
+  private final Rotation2d absoluteEncoderOffset;
 
   public ModuleIOSparkMax(ModuleConfig config) {
     // Init motor & encoder objects
@@ -110,7 +111,7 @@ public class ModuleIOSparkMax implements ModuleIO {
     inputs.turnAbsolutePosition =
         new Rotation2d(
                 turnAbsoluteEncoder.getVoltage() / RobotController.getVoltage5V() * 2.0 * Math.PI)
-            .minus(new Rotation2d(Units.rotationsToRadians(absoluteEncoderOffset)));
+            .minus(absoluteEncoderOffset);
     inputs.turnPosition =
         Rotation2d.fromRotations(
             turnRelativeEncoder.getPosition() / moduleConstants.turnReduction());
