@@ -62,9 +62,12 @@ public class ModuleIOTalonFX implements ModuleIO {
   private final StatusSignal<Double> turnAppliedVolts;
   private final StatusSignal<Double> turnCurrent;
 
-  private final Rotation2d absoluteEncoderOffset;
+  private final double absoluteEncoderOffset;
+
+  //   private final ModuleConfig config;
 
   public ModuleIOTalonFX(ModuleConfig config) {
+    // this.config = config;
     driveTalon = new TalonFX(config.driveID(), canbus);
     turnTalon = new TalonFX(config.turnID(), canbus);
     cancoder = new CANcoder(config.absoluteEncoderChannel(), canbus);
@@ -74,15 +77,20 @@ public class ModuleIOTalonFX implements ModuleIO {
     driveConfig.CurrentLimits.StatorCurrentLimit = 40.0;
     driveConfig.CurrentLimits.StatorCurrentLimitEnable = true;
     driveTalon.getConfigurator().apply(driveConfig);
+    driveTalon.setInverted(config.driveMotorInverted());
     setDriveBrakeMode(true);
 
     var turnConfig = new TalonFXConfiguration();
     turnConfig.CurrentLimits.StatorCurrentLimit = 30.0;
     turnConfig.CurrentLimits.StatorCurrentLimitEnable = true;
     turnTalon.getConfigurator().apply(turnConfig);
+    turnTalon.setInverted(config.turnMotorInverted());
     setTurnBrakeMode(true);
 
-    cancoder.getConfigurator().apply(new CANcoderConfiguration());
+    CANcoderConfiguration cancoderConfigs = new CANcoderConfiguration();
+    cancoderConfigs.MagnetSensor.MagnetOffset = config.absoluteEncoderOffset();
+    cancoder.getConfigurator().apply(cancoderConfigs);
+    // cancoder.getConfigurator().apply(new CANcoderConfiguration());
 
     timestampQueue = PhoenixOdometryThread.getInstance().makeTimestampQueue();
 
@@ -140,7 +148,7 @@ public class ModuleIOTalonFX implements ModuleIO {
 
     inputs.turnAbsolutePosition =
         Rotation2d.fromRotations(turnAbsolutePosition.getValueAsDouble())
-            .minus(absoluteEncoderOffset);
+            .minus(new Rotation2d(Units.rotationsToRadians(absoluteEncoderOffset)));
     inputs.turnPosition =
         Rotation2d.fromRotations(turnPosition.getValueAsDouble() / moduleConstants.turnReduction());
     inputs.turnVelocityRadPerSec =
@@ -179,7 +187,11 @@ public class ModuleIOTalonFX implements ModuleIO {
   @Override
   public void setDriveBrakeMode(boolean enable) {
     var config = new MotorOutputConfigs();
-    config.Inverted = InvertedValue.CounterClockwise_Positive;
+    // Is this needed?
+    // config.Inverted =
+    //     this.config.driveMotorInverted()
+    //         ? InvertedValue.Clockwise_Positive
+    //         : InvertedValue.CounterClockwise_Positive;
     config.NeutralMode = enable ? NeutralModeValue.Brake : NeutralModeValue.Coast;
     driveTalon.getConfigurator().apply(config);
   }
@@ -187,11 +199,29 @@ public class ModuleIOTalonFX implements ModuleIO {
   @Override
   public void setTurnBrakeMode(boolean enable) {
     var config = new MotorOutputConfigs();
-    config.Inverted =
-        DriveConstants.moduleConfigs[0].turnMotorInverted()
-            ? InvertedValue.Clockwise_Positive
-            : InvertedValue.CounterClockwise_Positive;
+    // Is this needed?
+    // config.Inverted =
+    //     this.config.turnMotorInverted()
+    //         ? InvertedValue.Clockwise_Positive
+    //         : InvertedValue.CounterClockwise_Positive;
     config.NeutralMode = enable ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+    turnTalon.getConfigurator().apply(config);
+  }
+
+  @Override
+  public void setDriveInverted(boolean enable) {
+    var config = new MotorOutputConfigs();
+    config.Inverted =
+        enable ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
+
+    driveTalon.getConfigurator().apply(config);
+  }
+
+  @Override
+  public void setTurnInverted(boolean enable) {
+    var config = new MotorOutputConfigs();
+    config.Inverted =
+        enable ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
     turnTalon.getConfigurator().apply(config);
   }
 }

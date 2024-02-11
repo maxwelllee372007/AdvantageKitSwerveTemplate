@@ -3,9 +3,12 @@ package frc.robot.util;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
+import frc.robot.Constants;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -136,5 +139,22 @@ public class VisionHelpers {
           + stdDevs.toString()
           + '}';
     }
+  }
+
+  /**
+   * Transforms a pose to the opposite alliance's coordinate system. (0,0) is always on the right
+   * corner of your alliance wall, so for 2023, the field elements are at different coordinates for
+   * each alliance.
+   *
+   * @param poseToFlip pose to transform to the other alliance
+   * @return pose relative to the other alliance's coordinate system
+   */
+  public static Pose2d flipAlliance(Pose2d poseToFlip) {
+    return poseToFlip.relativeTo(
+        new Pose2d(
+            new Translation2d(
+                Constants.VisionConstants.FIELD_LENGTH_METERS,
+                Constants.VisionConstants.FIELD_WIDTH_METERS),
+            new Rotation2d(Math.PI)));
   }
 }

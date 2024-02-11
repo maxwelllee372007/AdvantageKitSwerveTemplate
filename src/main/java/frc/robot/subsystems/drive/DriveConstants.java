@@ -3,7 +3,6 @@ package frc.robot.subsystems.drive;
 import com.pathplanner.lib.util.PIDConstants;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.numbers.N1;
@@ -60,10 +59,10 @@ public final class DriveConstants {
         default -> 0.01;
       };
 
-  public static final int gyroID = 13;
+  public static final int gyroID = TunerConstants.kPigeonId;
 
   // Turn to "" for no canbus name
-  public static final String canbus = "chassis";
+  public static final String canbus = TunerConstants.kCANbusName;
 
   public static ModuleConfig[] moduleConfigs =
       switch (Constants.getRobot()) {
@@ -73,35 +72,35 @@ public final class DriveConstants {
                   TunerConstants.kFrontLeftDriveMotorId,
                   TunerConstants.kFrontLeftSteerMotorId,
                   TunerConstants.kFrontLeftEncoderId,
-                  Rotation2d.fromRotations(TunerConstants.kFrontLeftEncoderOffset)
-                      .plus(Rotation2d.fromDegrees(180)),
-                  true),
+                  TunerConstants.kFrontLeftEncoderOffset,
+                  TunerConstants.kSteerMotorReversed,
+                  TunerConstants.kInvertLeftSide),
               new ModuleConfig(
                   TunerConstants.kFrontRightDriveMotorId,
                   TunerConstants.kFrontRightSteerMotorId,
                   TunerConstants.kFrontRightEncoderId,
-                  Rotation2d.fromRotations(TunerConstants.kFrontRightEncoderOffset)
-                      .plus(Rotation2d.fromDegrees(180)),
-                  true),
+                  TunerConstants.kFrontRightEncoderOffset,
+                  TunerConstants.kSteerMotorReversed,
+                  TunerConstants.kInvertRightSide),
               new ModuleConfig(
                   TunerConstants.kBackLeftDriveMotorId,
                   TunerConstants.kBackLeftSteerMotorId,
                   TunerConstants.kBackLeftEncoderId,
-                  Rotation2d.fromRotations(TunerConstants.kBackLeftEncoderOffset)
-                      .plus(Rotation2d.fromDegrees(180)),
-                  true),
+                  TunerConstants.kBackLeftEncoderOffset,
+                  TunerConstants.kSteerMotorReversed,
+                  TunerConstants.kInvertLeftSide),
               new ModuleConfig(
                   TunerConstants.kBackRightDriveMotorId,
                   TunerConstants.kBackRightSteerMotorId,
                   TunerConstants.kBackRightEncoderId,
-                  Rotation2d.fromRotations(TunerConstants.kBackRightEncoderOffset)
-                      .plus(Rotation2d.fromDegrees(180)),
-                  true)
+                  TunerConstants.kBackRightEncoderOffset,
+                  TunerConstants.kSteerMotorReversed,
+                  TunerConstants.kInvertRightSide)
             };
         case SIMBOT -> {
           ModuleConfig[] configs = new ModuleConfig[4];
           for (int i = 0; i < configs.length; i++)
-            configs[i] = new ModuleConfig(0, 0, 0, new Rotation2d(0), false);
+            configs[i] = new ModuleConfig(0, 0, 0, 0, false, false);
           yield configs;
         }
       };
@@ -165,8 +164,10 @@ public final class DriveConstants {
       int driveID,
       int turnID,
       int absoluteEncoderChannel,
-      Rotation2d absoluteEncoderOffset,
-      boolean turnMotorInverted) {}
+      // Rotation2d absoluteEncoderOffset,
+      double absoluteEncoderOffset,
+      boolean turnMotorInverted,
+      boolean driveMotorInverted) {}
 
   public record ModuleConstants(
       double ffKs,

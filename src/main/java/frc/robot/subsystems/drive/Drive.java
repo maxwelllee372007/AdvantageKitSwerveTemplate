@@ -13,6 +13,8 @@
 
 package frc.robot.subsystems.drive;
 
+import static edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition.kBlueAllianceWallRightSide;
+import static edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition.kRedAllianceWallRightSide;
 import static edu.wpi.first.units.Units.*;
 import static frc.robot.subsystems.drive.DriveConstants.*;
 
@@ -21,6 +23,7 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PIDConstants;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import com.pathplanner.lib.util.ReplanningConfig;
+import edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -38,9 +41,12 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.util.VisionHelpers;
 import frc.robot.util.VisionHelpers.TimestampedVisionUpdate;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -54,6 +60,9 @@ public class Drive extends SubsystemBase {
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4]; // FL, FR, BL, BR
   private final SysIdRoutine sysId;
+
+  private final Field2d field2d = new Field2d();
+  private OriginPosition originPosition = kBlueAllianceWallRightSide;
 
   private static ProfiledPIDController thetaController =
       new ProfiledPIDController(
@@ -99,7 +108,7 @@ public class Drive extends SubsystemBase {
 
     // Start threads (no-op for each if no signals have been created)
     PhoenixOdometryThread.getInstance().start();
-    SparkMaxOdometryThread.getInstance().start();
+    // SparkMaxOdometryThread.getInstance().start();
 
     // Configure AutoBuilder for PathPlanner
     AutoBuilder.configureHolonomic(
@@ -203,6 +212,13 @@ public class Drive extends SubsystemBase {
       poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
       odometryDrive.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
     }
+
+    var dashboardPose = getPose();
+    if (originPosition == kRedAllianceWallRightSide) {
+      // Flip the pose when red, since the dashboard field photo cannot be rotated
+      dashboardPose = VisionHelpers.flipAlliance(dashboardPose);
+    }
+    field2d.setRobotPose(dashboardPose);
   }
 
   /**
@@ -345,5 +361,16 @@ public class Drive extends SubsystemBase {
 
   public static ProfiledPIDController getThetaController() {
     return thetaController;
+  }
+
+  public void addDashboardWidgets(ShuffleboardTab tab) {
+    tab.add("Field", field2d).withPosition(0, 0).withSize(6, 4);
+    tab.addString("Pose", this::getFomattedPose).withPosition(6, 2).withSize(2, 1);
+  }
+
+  private String getFomattedPose() {
+    var pose = getPose();
+    return String.format(
+        "(%.3f, %.3f) %.2f degrees", pose.getX(), pose.getY(), pose.getRotation().getDegrees());
   }
 }

@@ -18,19 +18,16 @@ import static frc.robot.subsystems.drive.DriveConstants.*;
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.DriveToPoint;
-import frc.robot.commands.MultiDistanceShot;
 import frc.robot.commands.PathFinderAndFollow;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveController;
@@ -39,15 +36,10 @@ import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
-import frc.robot.subsystems.flywheel.Flywheel;
-import frc.robot.subsystems.flywheel.FlywheelIO;
-import frc.robot.subsystems.flywheel.FlywheelIOSim;
-import frc.robot.subsystems.flywheel.FlywheelIOTalonFX;
 import frc.robot.subsystems.vision.AprilTagVision;
 import frc.robot.subsystems.vision.AprilTagVisionIO;
-import frc.robot.subsystems.vision.AprilTagVisionIOLimelight;
+import frc.robot.subsystems.vision.AprilTagVisionIOPhotonVision;
 import frc.robot.subsystems.vision.AprilTagVisionIOPhotonVisionSIM;
-import frc.robot.util.FieldConstants;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -59,7 +51,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
-  private final Flywheel flywheel;
+  //   private final Flywheel flywheel;
   private AprilTagVision aprilTagVision;
   private static DriveController driveMode = new DriveController();
 
@@ -91,8 +83,9 @@ public class RobotContainer {
         // new ModuleIOTalonFX(1),
         // new ModuleIOTalonFX(2),
         // new ModuleIOTalonFX(3));
-        flywheel = new Flywheel(new FlywheelIOTalonFX());
-        aprilTagVision = new AprilTagVision(new AprilTagVisionIOLimelight("limelight"));
+        // flywheel = new Flywheel(new FlywheelIOTalonFX());
+        if (Constants.VisionConstants.USE_VISION == true)
+          aprilTagVision = new AprilTagVision(new AprilTagVisionIOPhotonVision());
         break;
 
       case SIM:
@@ -104,13 +97,9 @@ public class RobotContainer {
                 new ModuleIOSim(),
                 new ModuleIOSim(),
                 new ModuleIOSim());
-        flywheel = new Flywheel(new FlywheelIOSim());
-        aprilTagVision =
-            new AprilTagVision(
-                new AprilTagVisionIOPhotonVisionSIM(
-                    "photonCamera1",
-                    new Transform3d(new Translation3d(0.5, 0.0, 0.5), new Rotation3d(0, 0, 0)),
-                    drive::getDrive));
+        // flywheel = new Flywheel(new FlywheelIOSim());
+        if (Constants.VisionConstants.USE_VISION == true)
+          aprilTagVision = new AprilTagVision(new AprilTagVisionIOPhotonVisionSIM(drive::getPose));
         break;
 
       default:
@@ -122,8 +111,9 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-        flywheel = new Flywheel(new FlywheelIO() {});
-        aprilTagVision = new AprilTagVision(new AprilTagVisionIO() {});
+        // flywheel = new Flywheel(new FlywheelIO() {});
+        if (Constants.VisionConstants.USE_VISION == true)
+          aprilTagVision = new AprilTagVision(new AprilTagVisionIO() {});
 
         break;
     }
@@ -161,10 +151,12 @@ public class RobotContainer {
     // flywheel.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
     // Configure the button bindings
-    aprilTagVision.setDataInterfaces(drive::addVisionData);
+    if (Constants.VisionConstants.USE_VISION == true)
+      aprilTagVision.setDataInterfaces(drive::addVisionData);
     driveMode.setPoseSupplier(drive::getPose);
     driveMode.disableHeadingControl();
     configureButtonBindings();
+    configureDashboard();
   }
 
   /**
@@ -204,11 +196,11 @@ public class RobotContainer {
             new DriveToPoint(
                 drive, new Pose2d(new Translation2d(2.954, 3.621), Rotation2d.fromRadians(2.617))));
 
-    controller
-        .povUp()
-        .whileTrue(
-            new MultiDistanceShot(
-                drive::getPose, FieldConstants.Speaker.centerSpeakerOpening, flywheel));
+    // controller
+    //     .povUp()
+    //     .whileTrue(
+    //         new MultiDistanceShot(
+    //             drive::getPose, FieldConstants.Speaker.centerSpeakerOpening, flywheel));
 
     // controller
     //     .b()
@@ -233,5 +225,15 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return autoChooser.get();
+  }
+
+  private void configureDashboard() {
+    /**** Driver tab ****/
+
+    // /**** Vision tab ****/
+    final var visionTab = Shuffleboard.getTab("Vision");
+
+    // Pose estimation
+    drive.addDashboardWidgets(visionTab);
   }
 }
